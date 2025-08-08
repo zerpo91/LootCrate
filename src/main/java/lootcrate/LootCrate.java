@@ -21,6 +21,8 @@ import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.Particle;
+import lootcrate.utils.ParticleUtils;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -75,6 +77,41 @@ public class LootCrate extends JavaPlugin {
             }
 
         }, 80L);
+
+        // Ajout : Effets de particules et effets visuels spéciaux autour des caisses
+        Bukkit.getScheduler().runTaskTimer(this, () -> {
+            LocationManager locationManager = getManager(LocationManager.class);
+            if (locationManager == null) return;
+            Map<org.bukkit.Location, lootcrate.objects.Crate> locations = locationManager.getLocationList();
+            org.bukkit.configuration.ConfigurationSection section = getConfig().getConfigurationSection("particule");
+            org.bukkit.configuration.ConfigurationSection effectSection = getConfig().getConfigurationSection("effect");
+            for (Map.Entry<org.bukkit.Location, lootcrate.objects.Crate> entry : locations.entrySet()) {
+                lootcrate.objects.Crate crate = entry.getValue();
+                String crateName = crate.getName();
+                org.bukkit.Location loc = entry.getKey().clone().add(0.5, 1.2, 0.5); // au-dessus du bloc
+                // Effet de particule
+                if (section != null && section.contains(crateName)) {
+                    String color = section.getString(crateName);
+                    if (color != null && !color.equalsIgnoreCase("none")) {
+                        org.bukkit.Particle.DustOptions dust = lootcrate.utils.ParticleUtils.getDustOptions(color);
+                        if (dust != null) {
+                            loc.getWorld().spawnParticle(org.bukkit.Particle.DUST, loc, 10, 0.3, 0.3, 0.3, 0, dust);
+                        }
+                    }
+                }
+                // Effet visuel spécial
+                if (effectSection != null && effectSection.contains(crateName)) {
+                    String effect = effectSection.getString(crateName);
+                    if (effect != null) {
+                        if (effect.equalsIgnoreCase("explosion")) {
+                            loc.getWorld().spawnParticle(org.bukkit.Particle.EXPLOSION, loc, 1, 0, 0, 0, 0);
+                        } else if (effect.equalsIgnoreCase("thunder") || effect.equalsIgnoreCase("lightning")) {
+                            loc.getWorld().strikeLightningEffect(loc);
+                        }
+                    }
+                }
+            }
+        }, 40L, 20L); // toutes les secondes
     }
 
     private void createManagersMap() {
@@ -96,6 +133,7 @@ public class LootCrate extends JavaPlugin {
         managersMap.put(13, new CommandManager(this));
         managersMap.put(14, new ChatManager(this));
         managersMap.put(15, new CooldownManager(this));
+        managersMap.put(16, new AntiSpamBroadcastManager(this));
 
     }
 
