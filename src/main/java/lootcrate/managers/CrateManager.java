@@ -2,6 +2,7 @@ package lootcrate.managers;
 
 import lootcrate.LootCrate;
 import lootcrate.enums.*;
+import lootcrate.managers.LocationManager;
 import lootcrate.objects.Crate;
 import lootcrate.objects.CrateItem;
 import lootcrate.objects.RandomCollection;
@@ -86,7 +87,7 @@ public class CrateManager extends BasicManager {
             String effect = effectSection.getString(crate.getName());
             if (effect != null) {
                 // Pour chaque position de la caisse
-                List<org.bukkit.Location> locations = this.getPlugin().getManager(lootcrate.managers.LocationManager.class).getCrateLocations(crate);
+                List<org.bukkit.Location> locations = this.getPlugin().getManager(LocationManager.class).getCrateLocations(crate);
                 for (org.bukkit.Location loc : locations) {
                     org.bukkit.Location effectLoc = loc.clone().add(0.5, 1, 0.5);
                     // Effets visuels avancés
@@ -179,27 +180,36 @@ public class CrateManager extends BasicManager {
         if (!crateItem.isDisplay()) {
             for (int i = 0; i < rnd; i++)
                 p.getInventory().addItem(crateItem.getItem());
-            // Broadcast si activé et anti-spam
-            boolean broadcastEnabled = false;
-            Object broadcastOption = this.getPlugin().getManager(OptionManager.class).valueOf(Option.BROADCAST_ITEM_WIN_ENABLED);
-            if (broadcastOption instanceof Boolean) {
-                broadcastEnabled = (Boolean) broadcastOption;
-            }
-            if (broadcastEnabled) {
-                String itemName = lootcrate.utils.ItemUtils.getDisplayOrTranslatedName(this.getPlugin(), crateItem.getItem());
-                
-                // Vérifier l'anti-spam avant d'envoyer le broadcast
-                AntiSpamBroadcastManager antiSpamManager = this.getPlugin().getManager(AntiSpamBroadcastManager.class);
-                if (antiSpamManager != null && antiSpamManager.shouldBroadcast(p, crate, itemName)) {
-                    String message = (String) this.getPlugin().getManager(OptionManager.class).valueOf(Option.BROADCAST_ITEM_WIN_MESSAGE);
-                    message = message.replace("{crate_name}", crateName)
-                                     .replace("{player_name}", p.getName())
-                                     .replace("{item_name}", itemName);
-                    org.bukkit.Bukkit.broadcastMessage(org.bukkit.ChatColor.translateAlternateColorCodes('&', message));
-                }
-            }
+            
+            handleItemWinBroadcast(crateItem, p, crateName, crate);
         }
 
+        executeItemCommands(crateItem, p, crateName, rnd);
+    }
+
+    private void handleItemWinBroadcast(CrateItem crateItem, Player p, String crateName, Crate crate) {
+        boolean broadcastEnabled = false;
+        Object broadcastOption = this.getPlugin().getManager(OptionManager.class).valueOf(Option.BROADCAST_ITEM_WIN_ENABLED);
+        if (broadcastOption instanceof Boolean) {
+            broadcastEnabled = (Boolean) broadcastOption;
+        }
+        
+        if (broadcastEnabled) {
+            String itemName = lootcrate.utils.ItemUtils.getDisplayOrTranslatedName(this.getPlugin(), crateItem.getItem());
+            
+            // Vérifier l'anti-spam avant d'envoyer le broadcast
+            AntiSpamBroadcastManager antiSpamManager = this.getPlugin().getManager(AntiSpamBroadcastManager.class);
+            if (antiSpamManager != null && antiSpamManager.shouldBroadcast(p, crate, itemName)) {
+                String message = (String) this.getPlugin().getManager(OptionManager.class).valueOf(Option.BROADCAST_ITEM_WIN_MESSAGE);
+                message = message.replace("{crate_name}", crateName)
+                                 .replace("{player_name}", p.getName())
+                                 .replace("{item_name}", itemName);
+                Bukkit.broadcastMessage(ChatColor.translateAlternateColorCodes('&', message));
+            }
+        }
+    }
+
+    private void executeItemCommands(CrateItem crateItem, Player p, String crateName, int rnd) {
         int i = 1;
 
         for (String cmd : crateItem.getCommands()) {
@@ -217,7 +227,6 @@ public class CrateManager extends BasicManager {
                         .replace("{crate_name}", crateName)
                 );
         }
-
     }
 
     public void addDefaultOptions(Crate crate) {

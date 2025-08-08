@@ -101,7 +101,6 @@ public class AntiSpamBroadcastManager extends BasicManager {
                 .replace("{crate_name}", crate.getName())
                 .replace("{player_name}", player.getName());
             
-            String prefix = getPlugin().getManager(MessageManager.class).getPrefix();
             Bukkit.broadcastMessage(antiSpamMessage);
 
             return false; // Bloquer le broadcast original

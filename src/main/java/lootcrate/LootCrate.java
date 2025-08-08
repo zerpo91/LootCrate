@@ -10,6 +10,7 @@ import lootcrate.events.listeners.custom.CrateViewListener;
 import lootcrate.gui.events.listeners.GUICloseListener;
 import lootcrate.managers.*;
 import lootcrate.objects.*;
+import lootcrate.utils.ParticleUtils;
 import org.bukkit.ChatColor;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
@@ -77,18 +78,18 @@ public class LootCrate extends JavaPlugin {
         Bukkit.getScheduler().runTaskTimer(this, () -> {
             LocationManager locationManager = getManager(LocationManager.class);
             if (locationManager == null) return;
-            Map<org.bukkit.Location, lootcrate.objects.Crate> locations = locationManager.getLocationList();
+            Map<org.bukkit.Location, Crate> locations = locationManager.getLocationList();
             org.bukkit.configuration.ConfigurationSection section = getConfig().getConfigurationSection("particule");
             org.bukkit.configuration.ConfigurationSection effectSection = getConfig().getConfigurationSection("effect");
-            for (Map.Entry<org.bukkit.Location, lootcrate.objects.Crate> entry : locations.entrySet()) {
-                lootcrate.objects.Crate crate = entry.getValue();
+            for (Map.Entry<org.bukkit.Location, Crate> entry : locations.entrySet()) {
+                Crate crate = entry.getValue();
                 String crateName = crate.getName();
                 org.bukkit.Location loc = entry.getKey().clone().add(0.5, 1.2, 0.5); // au-dessus du bloc
                 // Effet de particule
                 if (section != null && section.contains(crateName)) {
                     String color = section.getString(crateName);
                     if (color != null && !color.equalsIgnoreCase("none")) {
-                        org.bukkit.Particle.DustOptions dust = lootcrate.utils.ParticleUtils.getDustOptions(color);
+                        org.bukkit.Particle.DustOptions dust = ParticleUtils.getDustOptions(color);
                         if (dust != null) {
                             loc.getWorld().spawnParticle(org.bukkit.Particle.DUST, loc, 10, 0.3, 0.3, 0.3, 0, dust);
                         }
